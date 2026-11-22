@@ -1,3 +1,25 @@
 .DS_Store
 Thumbs.db
 *.log
+*.tsbuildinfo
+
+# Local secrets and private roster data
+.env
+.env.*
+!.env.example
+/data/private/
+/uploads/
+
+# Next.js and generated code
+/.next/
+/out/
+/build/
+/dist/
+/src/generated/prisma/
+/coverage/
+/.vercel/
+/node_modules/
+
+# Local database artifacts
+*.sqlite
+*.db

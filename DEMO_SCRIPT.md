@@ -1,25 +1,31 @@
-# Demo video outline (3–5 minutes)
+# Demo walkthrough (3–5 minutes)
 
-## 0:00–0:30 — The workspace
+Record this after the workspace has been configured with your own anonymized assessment workbook. Do not show a real credential or personal record you do not have permission to disclose.
 
-Introduce Rosterly as a monthly planning tool for operations teams. Point out the 30 employees, 6 pods, 22 brands, and mix of single-resource and shared-resource accounts.
+## 0:00–0:30 — Sign-in and roles
 
-## 0:30–1:15 — Generate and review a month
+Show the Rosterly login and role badge after signing in. Explain that the workspace has Administrator, Operations Manager, Pod Lead, and Employee roles, and that API routes check both role and pod scope.
 
-Open **Roster planner**, select a month, and generate the roster. Show the calendar coverage indicators, then open a date to review the brand/process detail. Switch through company-wide, pod, brand, process, and employee views.
+## 0:30–1:10 — Real source data
 
-## 1:15–2:00 — Client-specific schedules
+Open **Data import**, download the workbook template, and briefly show its employee, pod, brand, process, eligibility, availability, and holiday sheets. Use the prepared anonymized assessment workbook to validate and apply. Point out the preview and explain that the app contains no invented staffing records.
 
-Open **Coverage rules**. Compare a single-resource brand's Monday-to-Saturday, public-holiday-off processes with a multi-resource brand's seven-day Customer Support rule. Show baseline staffing, the Saturday-specific minimum, and holiday settings.
+## 1:10–2:05 — Generate the month
 
-## 2:00–2:50 — Make an availability change
+Choose the required month and generate a draft. Show coverage, the pod summary, process calendars, and uncovered staffing slots. Explain how approved time away and process eligibility affect assignment selection.
 
-Open **Issues & changes** and choose **Simulate leave change**. Explain that the sole Non-Delivery Reports assignee is unavailable on an operating day, so the existing plan shows a leave conflict and coverage gap. Choose **Add backup**, select a teammate already supporting the same brand, save the allocation, then regenerate the roster.
+## 2:05–2:45 — Review and change a draft
 
-## 2:50–3:30 — Validate and export
+Open **Monthly roster** and filter by pod or brand. Make a controlled manual assignment change in a draft and show the revalidated result. Explain the difference between a preferred weekly-off warning and blocking issues such as approved leave, overlap, or missing eligibility.
 
-Show that same-brand multi-process work is permitted while cross-brand overlap is surfaced. Review the updated findings, then return to the roster and download a CSV. Mention that workspace JSON can be exported and imported for review in another browser.
+## 2:45–3:25 — Availability and publication
 
-## Optional closing
+Open **Availability** to show a pending request and its approval controls. Return to the draft and publish only when all blocking issues are resolved. Show the published status and CSV export.
 
-Explain the main trade-off: this assessment version uses a deterministic greedy scheduler and local browser storage. A production version would add shared persistence and an optimizer for fairness and more detailed shift constraints.
+## 3:25–4:05 — AI and account access
+
+Ask the AI assistant to explain a coverage issue. Mention that its key stays on the server and it cannot change the roster. If time allows, show **User access** and an employee-linked or pod-scoped account.
+
+## Closing
+
+State the main limitation: roster creation is deterministic and greedy, not a global optimizer. Name one next improvement, such as skill constraints or full-month fairness optimization.

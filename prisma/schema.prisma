@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  OPERATIONS_MANAGER
+  POD_LEAD
+  EMPLOYEE
+}
+
+enum HolidayMode {
+  OPEN
+  CLOSED
+}
+
+enum AvailabilityType {
+  LEAVE
+  COMP_OFF
+  UNAVAILABLE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RosterVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum IssueSeverity {
+  ERROR
+  WARNING
+  INFO
+}
+
+enum AssignmentSource {
+  GENERATED
+  MANUAL
+}
+
+model UserAccount {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  displayName  String
+  passwordHash String
+  role         UserRole
+  employeeId   String?   @unique
+  managedPodId String?   @unique
+  isActive     Boolean   @default(true)
+  failedLoginAttempts Int @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  managedPod Pod?      @relation("PodLeadAccount", fields: [managedPodId], references: [id], onDelete: SetNull)
+  sessions   Session[]
+  auditEvents AuditEvent[]
+  importBatches ImportBatch[]
+  createdVersions RosterVersion[] @relation("VersionCreator")
+  publishedVersions RosterVersion[] @relation("VersionPublisher")
+
+  @@index([role, isActive])
+}
+
+model Session {
+  id        String      @id @default(cuid())
+  tokenHash String      @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+  user      UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  createdAt DateTime @default(now())
+}
+
+model Pod {
+  id                  String       @id @default(cuid())
+  externalKey         String?      @unique
+  name                String       @unique
+  leadEmployeeId      String?      @unique
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  members              Employee[]  @relation("PodMembers")
+  lead                 Employee?   @relation("PodLead", fields: [leadEmployeeId], references: [id], onDelete: SetNull)
+  leadAccount          UserAccount? @relation("PodLeadAccount")
+  brands               Brand[]
+
+  @@index([name])
+}
+
+model Employee {
+  id               String        @id @default(cuid())
+  externalKey      String?       @unique
+  displayName      String
+  podId            String
+  weeklyOffDays    Int[]         @default([])
+  mandatoryOffDays Int[]         @default([])
+  maxDailyMinutes  Int           @default(480)
+  active           Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  pod              Pod           @relation("PodMembers", fields: [podId], references: [id], onDelete: Restrict)
+  leadsPod         Pod?          @relation("PodLead")
+  account          UserAccount?
+  eligibility      EmployeeEligibility[]
+  availability     EmployeeAvailability[]
+  assignments      RosterAssignment[]
+
+  @@index([podId, active])
+  @@index([displayName])
+}
+
+model Brand {
+  id          String    @id @default(cuid())
+  externalKey String?   @unique
+  name        String
+  podId       String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  pod         Pod?      @relation(fields: [podId], references: [id], onDelete: SetNull)
+  processes   Process[]
+
+  @@unique([podId, name])
+  @@index([name, active])
+  @@index([podId])
+}
+
+model Process {
+  id                String         @id @default(cuid())
+  externalKey       String?        @unique
+  brandId           String
+  name              String
+  operatingDays     Int[]          @default([1, 2, 3, 4, 5, 6])
+  holidayMode       HolidayMode    @default(CLOSED)
+  minStaff          Int            @default(1)
+  startMinute       Int            @default(540)
+  endMinute         Int            @default(1020)
+  active            Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  brand             Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  weekdayRules      OperatingRule[]
+  eligibility       EmployeeEligibility[]
+  assignments       RosterAssignment[]
+  issues            RosterIssue[]
+
+  @@unique([brandId, name])
+  @@index([brandId, active])
+}
+
+model OperatingRule {
+  id        String   @id @default(cuid())
+  processId String
+  weekday   Int
+  isOpen    Boolean  @default(true)
+  minStaff  Int      @default(1)
+  process   Process  @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@unique([processId, weekday])
+}
+
+model EmployeeEligibility {
+  id            String    @id @default(cuid())
+  employeeId    String
+  processId     String
+  validFrom     DateTime  @default(now()) @db.Date
+  validUntil    DateTime? @db.Date
+  isBackup      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  process       Process   @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, processId, validFrom])
+  @@index([employeeId, validUntil])
+  @@index([processId, validUntil])
+}
+
+model EmployeeAvailability {
+  id          String         @id @default(cuid())
+  employeeId  String
+  type        AvailabilityType
+  status      ApprovalStatus @default(PENDING)
+  startDate   DateTime       @db.Date
+  endDate     DateTime       @db.Date
+  note        String?        @db.VarChar(500)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  employee    Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, type, startDate, endDate])
+  @@index([employeeId, startDate, endDate])
+  @@index([status, startDate])
+}
+
+model PublicHoliday {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  name      String
+  region    String   @default("GLOBAL")
+  createdAt DateTime @default(now())
+
+  @@unique([date, region])
+  @@index([region, date])
+}
+
+model Roster {
+  id        String          @id @default(cuid())
+  month     DateTime        @unique @db.Date
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  versions  RosterVersion[]
+}
+
+model RosterVersion {
+  id            String              @id @default(cuid())
+  rosterId      String
+  number        Int
+  revision      Int                 @default(0)
+  status        RosterVersionStatus @default(DRAFT)
+  createdById   String
+  publishedById String?
+  createdAt     DateTime            @default(now())
+  publishedAt   DateTime?
+  changeSummary String?             @db.VarChar(1000)
+
+  roster        Roster              @relation(fields: [rosterId], references: [id], onDelete: Cascade)
+  createdBy     UserAccount         @relation("VersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  publishedBy   UserAccount?        @relation("VersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  assignments   RosterAssignment[]
+  issues        RosterIssue[]
+
+  @@unique([rosterId, number])
+  @@index([rosterId, status, number])
+}
+
+model RosterAssignment {
+  id          String           @id @default(cuid())
+  versionId   String
+  employeeId  String
+  processId   String
+  date        DateTime         @db.Date
+  source      AssignmentSource @default(GENERATED)
+  note        String?          @db.VarChar(500)
+  createdAt   DateTime         @default(now())
+
+  version     RosterVersion    @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  employee    Employee         @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  process     Process          @relation(fields: [processId], references: [id], onDelete: Restrict)
+
+  @@unique([versionId, employeeId, processId, date])
+  @@index([versionId, date])
+  @@index([employeeId, date])
+  @@index([processId, date])
+}
+
+model RosterIssue {
+  id          String        @id @default(cuid())
+  versionId   String
+  processId   String
+  date        DateTime      @db.Date
+  severity    IssueSeverity
+  code        String
+  message     String        @db.VarChar(1000)
+  missing     Int           @default(0)
+  createdAt   DateTime      @default(now())
+
+  version     RosterVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  process     Process       @relation(fields: [processId], references: [id], onDelete: Restrict)
+
+  @@index([versionId, severity, date])
+  @@index([processId, date])
+}
+
+model ImportBatch {
+  id           String      @id @default(cuid())
+  uploadedById String
+  fileName     String
+  rowCount     Int         @default(0)
+  result       Json
+  committedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  uploadedBy   UserAccount @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+}
+
+model AuditEvent {
+  id         String      @id @default(cuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  createdAt  DateTime    @default(now())
+  actor      UserAccount @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+}
