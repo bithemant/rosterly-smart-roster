@@ -32,7 +32,11 @@ function scalar(value: ExcelJS.CellValue | undefined): string {
 function sheetRows(sheet: ExcelJS.Worksheet | undefined, errors: string[]) {
   if (!sheet) return [] as Array<{ line: number; row: Record<string, string> }>;
   const headers = new Map<string, number>();
-  sheet.getRow(1).eachCell((cell, column) => headers.set(scalar(cell.value).toLowerCase(), column));
+  sheet.getRow(1).eachCell((cell, column) => {
+    const name = scalar(cell.value).toLowerCase();
+    if (name && headers.has(name)) errors.push(`${sheet.name}: duplicate column header “${name}”.`);
+    if (name) headers.set(name, column);
+  });
   const result: Array<{ line: number; row: Record<string, string> }> = [];
   sheet.eachRow((row, line) => {
     if (line === 1) return;
@@ -118,6 +122,7 @@ function csvRows(text: string): string[][] {
   }
   row.push(value.trim());
   if (row.some(Boolean)) rows.push(row);
+  if (quoted) throw new HttpError(400, "The CSV contains an unclosed quoted field.");
   return rows;
 }
 
@@ -126,6 +131,14 @@ function assertUnique(values: string[], label: string, errors: string[]) {
   for (const value of values) {
     if (!value) continue;
     if (seen.has(value)) errors.push(`${label}: duplicate external key “${value}”.`);
+    seen.add(value);
+  }
+}
+
+function assertUniqueRows(values: string[], label: string, errors: string[]) {
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (seen.has(value)) errors.push(`${label}: duplicate row for “${value}”.`);
     seen.add(value);
   }
 }
@@ -153,7 +166,13 @@ export async function parseImport(fileName: string, bytes: Buffer, existing: { p
   const ext = fileName.split(".").at(-1)?.toLowerCase();
   if (!ext || !["xlsx", "csv"].includes(ext)) throw new HttpError(400, "Upload an .xlsx workbook or a .csv employee file.");
   const workbook = new ExcelJS.Workbook();
-  if (ext === "xlsx") await workbook.xlsx.load(bytes as unknown as Parameters<ExcelJS.Workbook["xlsx"]["load"]>[0]);
+  if (ext === "xlsx") {
+    try {
+      await workbook.xlsx.load(bytes as unknown as Parameters<ExcelJS.Workbook["xlsx"]["load"]>[0]);
+    } catch {
+      throw new HttpError(400, "The Excel file is invalid or could not be opened.");
+    }
+  }
   else {
     const rows = csvRows(bytes.toString("utf8"));
     if (!rows.length) errors.push("CSV: the file has no header row.");
@@ -238,6 +257,10 @@ export async function parseImport(fileName: string, bytes: Buffer, existing: { p
   assertUnique(data.employees.map((item) => item.externalKey), "Employees", errors);
   assertUnique(data.brands.map((item) => item.externalKey), "Brands", errors);
   assertUnique(data.processes.map((item) => item.externalKey), "Processes", errors);
+  assertUniqueRows(data.rules.map((item) => `${item.processKey}|${item.weekday}`), "ProcessRules", errors);
+  assertUniqueRows(data.eligibility.map((item) => `${item.employeeKey}|${item.processKey}|${item.validFrom}`), "Eligibility", errors);
+  assertUniqueRows(data.availability.map((item) => `${item.employeeKey}|${item.type}|${item.startDate}|${item.endDate}`), "Availability", errors);
+  assertUniqueRows(data.holidays.map((item) => `${item.date}|${item.region}`), "Holidays", errors);
   validateReferences(data, errors, existing);
 
   const rowCount = Object.values(data).reduce((sum, rows) => sum + rows.length, 0);

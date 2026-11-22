@@ -99,6 +99,17 @@ npm start
 
 Configure `DATABASE_URL`, `SETUP_TOKEN`, `NODE_ENV=production`, and optionally AI variables in the host’s secret manager. Use managed PostgreSQL or a properly backed-up PostgreSQL server; do not expose the local Docker credentials from `compose.yaml`. Serve the app behind HTTPS so session cookies are secure. Set up database backups and rotate the setup token after initial setup.
 
+For a Docker host, the `Dockerfile` builds a small standalone Next.js runtime image and a separate `migrator` target. Build both from the same commit, run the migrator with the production `DATABASE_URL` before rollout, then start the runtime image on port `3000`:
+
+```bash
+docker build --target migrator -t rosterly-migrator .
+docker run --rm --env-file .env.production rosterly-migrator
+docker build --target runner -t rosterly .
+docker run --rm --env-file .env.production -p 3000:3000 rosterly
+```
+
+Keep `.env.production` outside the repository and use the hosting platform’s secret store where available. The app image does not start PostgreSQL; point it at a separately managed PostgreSQL service.
+
 No deployment host was selected in this repository, so a live production URL and production database are not claimed here. The host-specific domain, TLS, and environment setup remain deployment steps.
 
 ## Project commands
@@ -121,6 +132,7 @@ No deployment host was selected in this repository, so a live production URL and
 - Generation can leave open slots when the eligible workforce is insufficient. Managers see those gaps and must resolve them before publication.
 - AI suggestions never modify assignments, approve leave, or publish a roster.
 - See [APPROACH.md](APPROACH.md) for the assessment answers and trade-offs, and [DEMO_SCRIPT.md](DEMO_SCRIPT.md) for a recording walkthrough.
+- See [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) for the remaining host, data, recording, and profile details before submission.
 
 ## Source document
 

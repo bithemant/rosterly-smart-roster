@@ -23,6 +23,7 @@ export function jsonError(error: unknown) {
     const code = String((error as { code: unknown }).code);
     if (code === "P2002") return Response.json({ error: "A record with this key already exists." }, { status: 409 });
     if (code === "P2003") return Response.json({ error: "A referenced record is missing or cannot be changed." }, { status: 409 });
+    if (code === "P2034") return Response.json({ error: "The workspace changed during this operation. Refresh and try again." }, { status: 409 });
     if (code === "P2025") return Response.json({ error: "The requested record was not found." }, { status: 404 });
   }
 
