@@ -37,7 +37,11 @@ export async function POST(request: Request, context: { params: Promise<{ batchI
     });
     if (preview.errors.length) throw new HttpError(409, "The workbook no longer passes validation. Preview it again and resolve the listed issues.");
     if (preview.rowCount !== batch.rowCount) throw new HttpError(409, "The workbook row count changed. Preview the file again.");
-    if (saved.counts && JSON.stringify(saved.counts) !== JSON.stringify(preview.counts)) throw new HttpError(409, "The workbook contents changed. Preview the file again.");
+    const previewCountsMatch = !saved.counts || (
+      Object.keys(saved.counts).length === Object.keys(preview.counts).length &&
+      Object.entries(saved.counts).every(([name, count]) => preview.counts[name] === count)
+    );
+    if (!previewCountsMatch) throw new HttpError(409, "The workbook contents changed. Preview the file again.");
     const data = preview.data;
 
     const counts = await db.$transaction(async (tx) => {

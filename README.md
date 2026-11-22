@@ -2,7 +2,7 @@
 
 Rosterly is a shared monthly planning workspace for multi-brand operations teams. It keeps workforce records and operating rules in PostgreSQL, produces versioned roster drafts, validates changes, and gives each account access only to its role and scope.
 
-The application contains no bundled employee names, sample workspaces, or fake roster assignments. Load anonymized source data using the workbook template before generating a roster.
+The application starts with an empty database and does not auto-seed workforce records. For the assessment walkthrough, an opt-in synthetic workbook uses generated operator IDs and fictional brand names. It is clearly labeled and must not be treated as real operational data. Replace it with your anonymized source data before operational use.
 
 ## Capabilities
 
@@ -66,7 +66,9 @@ For an externally managed PostgreSQL database, set `DATABASE_URL` to its connect
 
 ## Data import format
 
-Download the [blank Excel workbook](docs/rosterly-workforce-template.xlsx) now, or use **Data import** and `/api/import/template` after starting the app. It contains no sample employee records. Its sheets are `Pods`, `Employees`, `Brands`, `Processes`, `ProcessRules`, `Eligibility`, `Availability`, and `Holidays`. `ReadMe` explains the headers and formats. IDs in `externalKey` columns must stay consistent across sheets. Weekdays accept names or ISO numbers (`Mon=1` through `Sun=7`), dates use `YYYY-MM-DD`, and process times use 24-hour `HH:MM`. Set a brand or process `active` value to false to exclude it from new roster plans; omitted records are retained. Regenerate the workbook after changing its schema with `npm run import:template`.
+Download the [blank Excel workbook](docs/rosterly-workforce-template.xlsx) for your data, or use **Data import** and `/api/import/template` after starting the app. Its sheets are `Pods`, `Employees`, `Brands`, `Processes`, `ProcessRules`, `Eligibility`, `Availability`, and `Holidays`. `ReadMe` explains the headers and formats. IDs in `externalKey` columns must stay consistent across sheets. Weekdays accept names or ISO numbers (`Mon=1` through `Sun=7`), dates use `YYYY-MM-DD`, and process times use 24-hour `HH:MM`. Set a brand or process `active` value to false to exclude it from new roster plans; omitted records are retained. Regenerate the blank workbook after changing its schema with `npm run import:template`.
+
+If you do not have source data for the assessment demo, use the [clearly labeled synthetic December 2026 workbook](docs/demo-workforce-workbook.xlsx). It contains 30 pseudonymous operators, 30 fictional brands, five pods, varied calendars, shared-process staffing, weekly-off patterns, a trained backup allocation, two demo holidays, and one approved demo leave. State that this dataset is synthetic when you present it. Regenerate it with `npm run demo:workbook`.
 
 The CSV template at `/api/import/template?format=csv` supports employee rows for pods that already exist in the database. CSV is not a substitute for the complete multi-sheet workbook on a new workspace.
 
@@ -124,6 +126,8 @@ No deployment host was selected in this repository, so a live production URL and
 | `npm run db:deploy` | Apply committed migrations |
 | `npm run db:migrate` | Create/apply a local development migration |
 | `npm run db:studio` | Open Prisma Studio |
+| `npm run import:template` | Regenerate the blank import workbook |
+| `npm run demo:workbook` | Regenerate the clearly labeled synthetic demo workbook |
 
 ## Assessment notes
 

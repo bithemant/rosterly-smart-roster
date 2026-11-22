@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "import:template": "tsx scripts/export-import-template.ts"
+    "import:template": "tsx scripts/export-import-template.ts",
+    "demo:workbook": "tsx scripts/generate-demo-workbook.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",

@@ -190,9 +190,9 @@ export function buildMonthlyRoster(input: PlannerInput): PlannerOutput {
 
           const weeklyOffOverride = employee.weeklyOffDays.includes(weekday);
           const score =
+            (weeklyOffOverride ? 1_000_000 : 0) +
+            (activeAllocation.isBackup ? 10_000 : 0) +
             (workload.get(employee.id) ?? 0) * 10 +
-            (activeAllocation.isBackup ? 8 : 0) +
-            (weeklyOffOverride ? 10_000 : 0) +
             (existingToday.length > 0 ? 3 : 0);
           return [{ employee, backup: activeAllocation.isBackup, weeklyOffOverride, score }];
         }).sort((left, right) => left.score - right.score || left.employee.id.localeCompare(right.employee.id));
@@ -252,15 +252,19 @@ export function buildMonthlyRoster(input: PlannerInput): PlannerOutput {
   };
 }
 
-export function validateMonthlyRoster(
+const assignmentValidationKey = (assignment: PlannedAssignment) =>
+  `${assignment.date}|${assignment.employeeId}|${assignment.processId}`;
+
+function analyzeMonthlyRoster(
   input: PlannerInput,
   assignments: PlannedAssignment[],
-): ScheduleIssue[] {
+): { issues: ScheduleIssue[]; invalidAssignmentKeys: Set<string> } {
   const dates = monthDates(input.month);
   const employees = new Map(input.employees.map((employee) => [employee.id, employee]));
   const processes = new Map(input.processes.map((process) => [process.id, process]));
   const issues: ScheduleIssue[] = [];
   const issueKeys = new Set<string>();
+  const invalidAssignmentKeys = new Set<string>();
 
   const addIssue = (issue: ScheduleIssue) => {
     const key = `${issue.date}|${issue.processId}|${issue.code}|${issue.message}`;
@@ -274,6 +278,7 @@ export function validateMonthlyRoster(
   const assignmentsByDayEmployee = new Map<string, PlannedAssignment[]>();
 
   for (const assignment of assignments) {
+    const validationKey = assignmentValidationKey(assignment);
     const process = processes.get(assignment.processId);
     const employee = employees.get(assignment.employeeId);
     const dateObject = new Date(`${assignment.date}T00:00:00.000Z`);
@@ -281,14 +286,17 @@ export function validateMonthlyRoster(
       dateObject.getUTCFullYear() === Number(input.month.slice(0, 4));
 
     if (!dateInMonth) {
+      invalidAssignmentKeys.add(validationKey);
       addIssue({ date: assignment.date, processId: assignment.processId, severity: "ERROR", code: "NON_OPERATING_DAY", message: "Assignment date is outside the selected month.", missing: 0 });
       continue;
     }
     if (!process) {
+      invalidAssignmentKeys.add(validationKey);
       addIssue({ date: assignment.date, processId: assignment.processId, severity: "ERROR", code: "NON_OPERATING_DAY", message: "Assignment points to an inactive or unavailable process.", missing: 0 });
       continue;
     }
     if (!employee) {
+      invalidAssignmentKeys.add(validationKey);
       addIssue({ date: assignment.date, processId: assignment.processId, severity: "ERROR", code: "INELIGIBLE", message: "Assignment points to an inactive or out-of-scope employee.", missing: 0 });
       continue;
     }
@@ -310,6 +318,7 @@ export function validateMonthlyRoster(
     const open = (rule?.isOpen ?? process.operatingDays.includes(weekday)) &&
       !(holiday && process.holidayMode === "CLOSED");
     if (!open) {
+      invalidAssignmentKeys.add(validationKey);
       addIssue({ date: assignment.date, processId: process.id, severity: "ERROR", code: "NON_OPERATING_DAY", message: `${process.brandName} / ${process.name} is closed on this date.`, missing: 0 });
     }
 
@@ -317,6 +326,7 @@ export function validateMonthlyRoster(
       item.employeeId === employee.id && item.processId === process.id && isBetween(assignment.date, item.validFrom, item.validUntil),
     );
     if (!eligible) {
+      invalidAssignmentKeys.add(validationKey);
       addIssue({ date: assignment.date, processId: process.id, severity: "ERROR", code: "INELIGIBLE", message: `${employee.name} is not eligible for ${process.brandName} / ${process.name} on this date.`, missing: 0 });
     }
 
@@ -324,13 +334,64 @@ export function validateMonthlyRoster(
       absence.employeeId === employee.id && absence.status === "APPROVED" && isBetween(assignment.date, absence.startDate, absence.endDate),
     );
     if (absent) {
+      invalidAssignmentKeys.add(validationKey);
       addIssue({ date: assignment.date, processId: process.id, severity: "ERROR", code: "APPROVED_ABSENCE", message: `${employee.name} has approved time off on this date.`, missing: 0 });
     }
 
     if (employee.mandatoryOffDays.includes(weekday)) {
+      invalidAssignmentKeys.add(validationKey);
       addIssue({ date: assignment.date, processId: process.id, severity: "ERROR", code: "MANDATORY_OFF", message: `${employee.name} has a mandatory weekly off on this date.`, missing: 0 });
     } else if (employee.weeklyOffDays.includes(weekday)) {
       addIssue({ date: assignment.date, processId: process.id, severity: "WARNING", code: "WEEKLY_OFF_OVERRIDE", message: `${employee.name} is scheduled on a preferred weekly off to maintain required coverage.`, missing: 0 });
+    }
+  }
+
+  for (const [key, dayAssignments] of assignmentsByDayEmployee) {
+    const date = key.slice(0, 10);
+    const employeeId = key.slice(11);
+    const employee = employees.get(employeeId);
+    if (!employee) continue;
+    const withTimes = dayAssignments.flatMap((assignment) => {
+      const process = processes.get(assignment.processId);
+      return process ? [{ assignment, process }] : [];
+    }).sort((left, right) => left.process.startMinute - right.process.startMinute);
+
+    let previous = withTimes[0];
+    for (let index = 1; index < withTimes.length; index += 1) {
+      const current = withTimes[index];
+      if (current.process.startMinute < previous.process.endMinute) {
+        invalidAssignmentKeys.add(assignmentValidationKey(current.assignment));
+        addIssue({
+          date,
+          processId: current.process.id,
+          severity: "ERROR",
+          code: "OVERLAP",
+          message: `${employee.name} has overlapping assignments for ${previous.process.brandName} / ${previous.process.name} and ${current.process.brandName} / ${current.process.name}.`,
+          missing: 0,
+        });
+      }
+      if (current.process.endMinute > previous.process.endMinute) previous = current;
+    }
+
+    const totalMinutes = withTimes.reduce((sum, item) => sum + item.process.endMinute - item.process.startMinute, 0);
+    if (totalMinutes > employee.maxDailyMinutes) {
+      let excessMinutes = totalMinutes - employee.maxDailyMinutes;
+      for (const item of [...withTimes].reverse()) {
+        if (excessMinutes <= 0) break;
+        invalidAssignmentKeys.add(assignmentValidationKey(item.assignment));
+        excessMinutes -= item.process.endMinute - item.process.startMinute;
+      }
+      const process = withTimes.at(-1)?.process;
+      if (process) {
+        addIssue({
+          date,
+          processId: process.id,
+          severity: "ERROR",
+          code: "DAILY_CAPACITY",
+          message: `${employee.name} is scheduled for ${totalMinutes} minutes against a ${employee.maxDailyMinutes}-minute daily limit.`,
+          missing: 0,
+        });
+      }
     }
   }
 
@@ -347,7 +408,9 @@ export function validateMonthlyRoster(
       if (!open) continue;
       const required = rule?.minStaff ?? process.minStaff;
       if (required < 1) continue;
-      const count = (assignmentsByDayProcess.get(`${date}|${process.id}`) ?? []).length;
+      const count = new Set((assignmentsByDayProcess.get(`${date}|${process.id}`) ?? [])
+        .filter((assignment) => !invalidAssignmentKeys.has(assignmentValidationKey(assignment)))
+        .map((assignment) => assignment.employeeId)).size;
       if (count < required) {
         addIssue({
           date,
@@ -361,53 +424,15 @@ export function validateMonthlyRoster(
     }
   }
 
-  for (const [key, dayAssignments] of assignmentsByDayEmployee) {
-    if (dayAssignments.length < 2) continue;
-    const date = key.slice(0, 10);
-    const employeeId = key.slice(11);
-    const employee = employees.get(employeeId);
-    if (!employee) continue;
-    const withTimes = dayAssignments.flatMap((assignment) => {
-      const process = processes.get(assignment.processId);
-      return process ? [{ assignment, process }] : [];
-    }).sort((left, right) => left.process.startMinute - right.process.startMinute);
+  return { issues, invalidAssignmentKeys };
+}
 
-    let previous = withTimes[0];
-    for (let index = 1; index < withTimes.length; index += 1) {
-      const current = withTimes[index];
-      if (current.process.startMinute < previous.process.endMinute) {
-        addIssue({
-          date,
-          processId: current.process.id,
-          severity: "ERROR",
-          code: "OVERLAP",
-          message: `${employee.name} has overlapping assignments for ${previous.process.brandName} / ${previous.process.name} and ${current.process.brandName} / ${current.process.name}.`,
-          missing: 0,
-        });
-      }
-      if (current.process.endMinute > previous.process.endMinute) previous = current;
-    }
-
-    const totalMinutes = withTimes.reduce((sum, item) => sum + item.process.endMinute - item.process.startMinute, 0);
-    if (totalMinutes > employee.maxDailyMinutes) {
-      const process = withTimes.at(-1)?.process;
-      if (process) {
-        addIssue({
-          date,
-          processId: process.id,
-          severity: "ERROR",
-          code: "DAILY_CAPACITY",
-          message: `${employee.name} is scheduled for ${totalMinutes} minutes against a ${employee.maxDailyMinutes}-minute daily limit.`,
-          missing: 0,
-        });
-      }
-    }
-  }
-
-  return issues;
+export function validateMonthlyRoster(input: PlannerInput, assignments: PlannedAssignment[]) {
+  return analyzeMonthlyRoster(input, assignments).issues;
 }
 
 export function measureCoverage(input: PlannerInput, assignments: PlannedAssignment[]) {
+  const { invalidAssignmentKeys } = analyzeMonthlyRoster(input, assignments);
   let requiredSlots = 0;
   let filledSlots = 0;
   const dates = monthDates(input.month);
@@ -426,7 +451,7 @@ export function measureCoverage(input: PlannerInput, assignments: PlannedAssignm
       if (!open || required < 1) continue;
       requiredSlots += required;
       const assigned = new Set(assignments
-        .filter((assignment) => assignment.date === date && assignment.processId === process.id)
+        .filter((assignment) => assignment.date === date && assignment.processId === process.id && !invalidAssignmentKeys.has(assignmentValidationKey(assignment)))
         .map((assignment) => assignment.employeeId));
       filledSlots += Math.min(required, assigned.size);
     }
@@ -436,6 +461,8 @@ export function measureCoverage(input: PlannerInput, assignments: PlannedAssignm
     requiredSlots,
     filledSlots,
     gapSlots: requiredSlots - filledSlots,
-    coveragePercent: requiredSlots === 0 ? 100 : Math.round((filledSlots / requiredSlots) * 100),
+    coveragePercent: requiredSlots === 0
+      ? 100
+      : Math.min(filledSlots < requiredSlots ? 99 : 100, Math.round((filledSlots / requiredSlots) * 100)),
   };
 }

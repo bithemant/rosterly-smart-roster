@@ -8,7 +8,7 @@ Update this checklist after the app has been connected to the real anonymized as
 - [x] PostgreSQL schema and initial migration committed.
 - [x] TypeScript, ESLint, and optimized Next.js build pass locally.
 - [ ] Start a PostgreSQL service and apply the migration in a live workspace.
-- [ ] Import and review the user's anonymized roster workbook.
+- [ ] Import and review the user's anonymized roster workbook, or use the labeled synthetic demo workbook and disclose that it is synthetic.
 - [ ] Deploy the app to the selected host and verify it over HTTPS.
 - [ ] Record and share a 3–5 minute walkthrough of the deployed app using `DEMO_SCRIPT.md`.
 - [ ] Add the user's LinkedIn profile URL.
@@ -27,7 +27,7 @@ Update this checklist after the app has been connected to the real anonymized as
 ## Before recording
 
 1. Start the configured PostgreSQL service and apply the committed migration.
-2. Set a private `SETUP_TOKEN`, create the first administrator, and import the anonymized workbook.
+2. Set a private `SETUP_TOKEN`, create the first administrator, and import the anonymized workbook or clearly disclose the synthetic demo workbook.
 3. Configure the AI provider only if you plan to demonstrate AI; keep the API key in server-side environment settings.
 4. Verify account scopes, draft generation, one manual change, availability review, publication validation, and CSV export.
 5. Record from the deployed URL without exposing credentials or personal data.

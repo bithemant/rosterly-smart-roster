@@ -1,6 +1,6 @@
 # Demo walkthrough (3–5 minutes)
 
-Record this after the workspace has been configured with your own anonymized assessment workbook. Do not show a real credential or personal record you do not have permission to disclose.
+Record this after the workspace has been configured with either your anonymized assessment workbook or the clearly labeled synthetic demo workbook. If using synthetic data, state that clearly. Do not show a real credential or personal record you do not have permission to disclose.
 
 ## 0:00–0:30 — Sign-in and roles
 
@@ -8,7 +8,7 @@ Show the Rosterly login and role badge after signing in. Explain that the worksp
 
 ## 0:30–1:10 — Real source data
 
-Open **Data import**, download the workbook template, and briefly show its employee, pod, brand, process, eligibility, availability, and holiday sheets. Use the prepared anonymized assessment workbook to validate and apply. Point out the preview and explain that the app contains no invented staffing records.
+Open **Data import** and briefly show the employee, pod, brand, process, eligibility, availability, and holiday sheets. Validate and apply the selected workbook. Show the import preview and name the dataset accurately: anonymized operational source data or a synthetic assessment demo.
 
 ## 1:10–2:05 — Generate the month
 
@@ -20,7 +20,7 @@ Open **Monthly roster** and filter by pod or brand. Make a controlled manual ass
 
 ## 2:45–3:25 — Availability and publication
 
-Open **Availability** to show a pending request and its approval controls. Return to the draft and publish only when all blocking issues are resolved. Show the published status and CSV export.
+Open **Availability** and approve leave for Demo Operator 001 on December 14, after the draft has already been generated. Return to the dashboard and show the two coverage gaps and 99% filled metric. Generate a new draft: the trained backup allocation allows Demo Operator 025 to cover the single-resource brand. Publish the revalidated draft and show its status and CSV export.
 
 ## 3:25–4:05 — AI and account access
 

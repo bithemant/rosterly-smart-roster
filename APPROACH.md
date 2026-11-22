@@ -1,6 +1,6 @@
 # Approach and design decisions
 
-This note describes the submitted Rosterly application against the assessment questions. The application intentionally starts empty: actual staffing rows should come from an anonymized workbook, not fabricated names or assignments.
+This note describes the submitted Rosterly application against the assessment questions. The application starts empty and never auto-seeds workforce records. An opt-in assessment workbook uses generated operator IDs and fictional brands so the workflow can be demonstrated without presenting the records as real. Use anonymized source data before operational use.
 
 ## 1. How are employees, brands, processes, pods, and relationships represented?
 
