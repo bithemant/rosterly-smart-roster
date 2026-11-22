@@ -84,8 +84,8 @@ export async function POST(request: Request, context: { params: Promise<{ batchI
       for (const item of data.brands) {
         const brand = await tx.brand.upsert({
           where: { externalKey: item.externalKey },
-          create: { externalKey: item.externalKey, name: item.name, podId: item.podKey ? podIds.get(item.podKey) : null },
-          update: { name: item.name, podId: item.podKey ? podIds.get(item.podKey) : null },
+          create: { externalKey: item.externalKey, name: item.name, podId: item.podKey ? podIds.get(item.podKey) : null, active: item.active },
+          update: { name: item.name, podId: item.podKey ? podIds.get(item.podKey) : null, active: item.active },
           select: { id: true },
         });
         brandIds.set(item.externalKey, brand.id);
@@ -97,11 +97,11 @@ export async function POST(request: Request, context: { params: Promise<{ batchI
           create: {
             externalKey: item.externalKey, brandId: brandIds.get(item.brandKey)!, name: item.name,
             operatingDays: item.operatingDays, holidayMode: item.holidayMode, minStaff: item.minStaff,
-            startMinute: item.startMinute, endMinute: item.endMinute,
+            startMinute: item.startMinute, endMinute: item.endMinute, active: item.active,
           },
           update: {
             brandId: brandIds.get(item.brandKey)!, name: item.name, operatingDays: item.operatingDays,
-            holidayMode: item.holidayMode, minStaff: item.minStaff, startMinute: item.startMinute, endMinute: item.endMinute,
+            holidayMode: item.holidayMode, minStaff: item.minStaff, startMinute: item.startMinute, endMinute: item.endMinute, active: item.active,
           },
           select: { id: true },
         });

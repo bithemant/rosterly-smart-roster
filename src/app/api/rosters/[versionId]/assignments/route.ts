@@ -25,7 +25,7 @@ export async function POST(request: Request, context: { params: Promise<{ versio
       db.process.findUnique({ where: { id: input.processId }, include: { brand: true } }),
       db.employee.findUnique({ where: { id: input.employeeId } }),
     ]);
-    if (!process || !employee || !process.active || !employee.active) throw new HttpError(404, "The selected employee or process is not active.");
+    if (!process || !employee || !process.active || !process.brand.active || !employee.active) throw new HttpError(404, "The selected employee or process is not active.");
     assertPodAccess(user, process.brand.podId);
     if (!ALL_ROLES.includes(user.role) && user.role === "POD_LEAD" && employee.podId !== user.managedPodId) throw new HttpError(403, "You can only change assignments in your pod.");
     const date = new Date(`${input.date}T00:00:00.000Z`);

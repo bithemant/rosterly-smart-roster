@@ -15,14 +15,16 @@ export async function loadRosterContext(user: SessionUser, month: string, includ
   });
   const employeeIds = employees.map((employee) => employee.id);
 
-  const processWhere = includeAllScopes || ALL_ROLES.includes(user.role)
-    ? {}
-    : user.role === "POD_LEAD"
-      ? { brand: { podId: user.managedPodId } }
-      : { eligibility: { some: { employeeId: user.employeeId ?? "" } } };
+  const processWhere = includeAllScopes
+    ? { active: true, brand: { active: true } }
+    : ALL_ROLES.includes(user.role)
+      ? { active: true, brand: { active: true } }
+      : user.role === "POD_LEAD"
+        ? { active: true, brand: { active: true, podId: user.managedPodId } }
+        : { active: true, brand: { active: true }, eligibility: { some: { employeeId: user.employeeId ?? "" } } };
 
   const processes = await db.process.findMany({
-    where: { ...processWhere, active: true },
+    where: processWhere,
     include: { brand: { select: { id: true, name: true, podId: true } }, weekdayRules: true },
     orderBy: [{ brand: { name: "asc" } }, { name: "asc" }],
   });

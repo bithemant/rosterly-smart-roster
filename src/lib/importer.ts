@@ -5,8 +5,8 @@ import { HttpError } from "@/lib/http";
 export type ImportData = {
   pods: Array<{ externalKey: string; name: string; leadEmployeeKey: string | null }>;
   employees: Array<{ externalKey: string; name: string; podKey: string; weeklyOffDays: number[]; mandatoryOffDays: number[]; maxDailyMinutes: number; active: boolean }>;
-  brands: Array<{ externalKey: string; name: string; podKey: string | null }>;
-  processes: Array<{ externalKey: string; brandKey: string; name: string; operatingDays: number[]; holidayMode: "OPEN" | "CLOSED"; minStaff: number; startMinute: number; endMinute: number }>;
+  brands: Array<{ externalKey: string; name: string; podKey: string | null; active: boolean }>;
+  processes: Array<{ externalKey: string; brandKey: string; name: string; operatingDays: number[]; holidayMode: "OPEN" | "CLOSED"; minStaff: number; startMinute: number; endMinute: number; active: boolean }>;
   rules: Array<{ processKey: string; weekday: number; isOpen: boolean; minStaff: number }>;
   eligibility: Array<{ employeeKey: string; processKey: string; validFrom: string; validUntil: string | null; isBackup: boolean }>;
   availability: Array<{ employeeKey: string; type: "LEAVE" | "COMP_OFF" | "UNAVAILABLE"; startDate: string; endDate: string; status: "PENDING" | "APPROVED" | "REJECTED"; note: string | null }>;
@@ -148,9 +148,18 @@ function validateReferences(data: ImportData, errors: string[], existing: { pods
   const employeeKeys = new Set([...data.employees.map((item) => item.externalKey), ...existing.employees]);
   const brandKeys = new Set([...data.brands.map((item) => item.externalKey), ...existing.brands]);
   const processKeys = new Set([...data.processes.map((item) => item.externalKey), ...existing.processes]);
+  const importedEmployees = new Map(data.employees.map((item) => [item.externalKey, item]));
   for (const item of data.employees) if (!podKeys.has(item.podKey)) errors.push(`Employees: pod key “${item.podKey}” does not exist on the Pods sheet.`);
   for (const item of data.brands) if (item.podKey && !podKeys.has(item.podKey)) errors.push(`Brands: pod key “${item.podKey}” does not exist on the Pods sheet.`);
-  for (const item of data.pods) if (item.leadEmployeeKey && !employeeKeys.has(item.leadEmployeeKey)) errors.push(`Pods: lead employee key “${item.leadEmployeeKey}” does not exist on the Employees sheet.`);
+  for (const item of data.pods) {
+    if (!item.leadEmployeeKey) continue;
+    if (!employeeKeys.has(item.leadEmployeeKey)) {
+      errors.push(`Pods: lead employee key “${item.leadEmployeeKey}” does not exist on the Employees sheet.`);
+      continue;
+    }
+    const importedLead = importedEmployees.get(item.leadEmployeeKey);
+    if (importedLead && importedLead.podKey !== item.externalKey) errors.push(`Pods: lead employee “${item.leadEmployeeKey}” must belong to pod “${item.externalKey}”.`);
+  }
   for (const item of data.processes) if (!brandKeys.has(item.brandKey)) errors.push(`Processes: brand key “${item.brandKey}” does not exist on the Brands sheet.`);
   for (const item of data.rules) if (!processKeys.has(item.processKey)) errors.push(`ProcessRules: process key “${item.processKey}” does not exist on the Processes sheet.`);
   for (const item of data.eligibility) {
@@ -204,6 +213,7 @@ export async function parseImport(fileName: string, bytes: Buffer, existing: { p
   data.brands = brandRows.map(({ line, row }) => ({
     externalKey: field(row, "externalKey", "Brands", line, errors), name: field(row, "name", "Brands", line, errors),
     podKey: field(row, "podKey", "Brands", line, errors, false) || null,
+    active: bool(field(row, "active", "Brands", line, errors, false), true, "Brands", line, "active", errors),
   }));
   const processRows = sheetRows(workbook.getWorksheet("Processes"), errors);
   data.processes = processRows.map(({ line, row }) => {
@@ -221,6 +231,7 @@ export async function parseImport(fileName: string, bytes: Buffer, existing: { p
       holidayMode: holidayValue === "OPEN" ? "OPEN" as const : "CLOSED" as const,
       minStaff: integer(field(row, "minStaff", "Processes", line, errors, false), 1, 1, 500, "Processes", line, "minStaff", errors),
       startMinute, endMinute,
+      active: bool(field(row, "active", "Processes", line, errors, false), true, "Processes", line, "active", errors),
     };
   });
   const ruleRows = sheetRows(workbook.getWorksheet("ProcessRules"), errors);
@@ -277,8 +288,8 @@ export function createImportTemplate() {
     ReadMe: ["Sheet", "Required columns", "Notes"],
     Pods: ["externalKey", "name", "leadEmployeeKey"],
     Employees: ["externalKey", "name", "podKey", "weeklyOffDays", "mandatoryOffDays", "maxDailyMinutes", "active"],
-    Brands: ["externalKey", "name", "podKey"],
-    Processes: ["externalKey", "brandKey", "name", "operatingDays", "holidayMode", "minStaff", "startTime", "endTime"],
+    Brands: ["externalKey", "name", "podKey", "active"],
+    Processes: ["externalKey", "brandKey", "name", "operatingDays", "holidayMode", "minStaff", "startTime", "endTime", "active"],
     ProcessRules: ["processKey", "weekday", "isOpen", "minStaff"],
     Eligibility: ["employeeKey", "processKey", "validFrom", "validUntil", "isBackup"],
     Availability: ["employeeKey", "type", "startDate", "endDate", "status", "note"],
@@ -288,8 +299,8 @@ export function createImportTemplate() {
     ["ReadMe", "Sheet names and headers are case-insensitive. Keep identifiers stable between sheets.", "No example names or real employee data are included."],
     ["Pods", "externalKey, name", "leadEmployeeKey is optional and points to Employees.externalKey."],
     ["Employees", "externalKey, name, podKey", "Days accept Mon,Wed or ISO weekdays 1–7 (Mon=1, Sun=7)."],
-    ["Brands", "externalKey, name", "podKey may be blank for shared brands."],
-    ["Processes", "externalKey, brandKey, name", "Times use 24-hour HH:MM. operatingDays accepts weekday names or 1–7."],
+    ["Brands", "externalKey, name", "podKey may be blank for shared brands. active defaults to true."],
+    ["Processes", "externalKey, brandKey, name", "Times use 24-hour HH:MM. operatingDays accepts weekday names or 1–7. active defaults to true."],
     ["ProcessRules", "processKey, weekday, isOpen, minStaff", "Optional per-weekday override. Leave sheet empty to use Processes defaults."],
     ["Eligibility", "employeeKey, processKey", "Dates use YYYY-MM-DD; blank validFrom means 1970-01-01."],
     ["Availability", "employeeKey, type, startDate, endDate", "Types: LEAVE, COMP_OFF, UNAVAILABLE. Status defaults to PENDING."],
