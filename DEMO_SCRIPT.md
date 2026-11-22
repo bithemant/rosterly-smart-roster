@@ -6,7 +6,7 @@ Record this after the workspace has been configured with either your anonymized 
 
 Show the Rosterly login and role badge after signing in. Explain that the workspace has Administrator, Operations Manager, Pod Lead, and Employee roles, and that API routes check both role and pod scope.
 
-## 0:30–1:10 — Real source data
+## 0:30–1:10 — Source data
 
 Open **Data import** and briefly show the employee, pod, brand, process, eligibility, availability, and holiday sheets. Validate and apply the selected workbook. Show the import preview and name the dataset accurately: anonymized operational source data or a synthetic assessment demo.
 
@@ -24,7 +24,7 @@ Open **Availability** and approve leave for Demo Operator 001 on December 14, af
 
 ## 3:25–4:05 — AI and account access
 
-Ask the AI assistant to explain a coverage issue. Mention that its key stays on the server and it cannot change the roster. If time allows, show **User access** and an employee-linked or pod-scoped account.
+If a provider and server-side API key are configured, ask the AI assistant to explain a coverage issue. Mention that its key stays on the server and it cannot change the roster. If AI is not configured, use this time to show **User access** and an employee-linked or pod-scoped account.
 
 ## Closing
 
