@@ -66,7 +66,7 @@ For an externally managed PostgreSQL database, set `DATABASE_URL` to its connect
 
 ## Data import format
 
-The Excel template is available at `/api/import/template`. Its sheets are `Pods`, `Employees`, `Brands`, `Processes`, `ProcessRules`, `Eligibility`, `Availability`, and `Holidays`. `ReadMe` explains the headers and formats. IDs in `externalKey` columns must stay consistent across sheets. Weekdays accept names or ISO numbers (`Mon=1` through `Sun=7`), dates use `YYYY-MM-DD`, and process times use 24-hour `HH:MM`. Set a brand or process `active` value to false to exclude it from new roster plans; omitted records are retained.
+Download the [blank Excel workbook](docs/rosterly-workforce-template.xlsx) now, or use **Data import** and `/api/import/template` after starting the app. It contains no sample employee records. Its sheets are `Pods`, `Employees`, `Brands`, `Processes`, `ProcessRules`, `Eligibility`, `Availability`, and `Holidays`. `ReadMe` explains the headers and formats. IDs in `externalKey` columns must stay consistent across sheets. Weekdays accept names or ISO numbers (`Mon=1` through `Sun=7`), dates use `YYYY-MM-DD`, and process times use 24-hour `HH:MM`. Set a brand or process `active` value to false to exclude it from new roster plans; omitted records are retained. Regenerate the workbook after changing its schema with `npm run import:template`.
 
 The CSV template at `/api/import/template?format=csv` supports employee rows for pods that already exist in the database. CSV is not a substitute for the complete multi-sheet workbook on a new workspace.
 
