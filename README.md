@@ -101,6 +101,8 @@ npm start
 
 Configure `DATABASE_URL`, `SETUP_TOKEN`, `NODE_ENV=production`, and optionally AI variables in the host’s secret manager. Use managed PostgreSQL or a properly backed-up PostgreSQL server; do not expose the local Docker credentials from `compose.yaml`. Serve the app behind HTTPS so session cookies are secure. Set up database backups and rotate the setup token after initial setup.
 
+Use `/api/health` as the host's readiness check. It returns HTTP 200 only when the app can reach PostgreSQL, and HTTP 503 otherwise. The production Docker image includes a health check against this route.
+
 For a Docker host, the `Dockerfile` builds a small standalone Next.js runtime image and a separate `migrator` target. Build both from the same commit, run the migrator with the production `DATABASE_URL` before rollout, then start the runtime image on port `3000`:
 
 ```bash

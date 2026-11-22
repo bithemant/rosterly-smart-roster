@@ -19,7 +19,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm audit --omit=dev
       - run: npm run db:generate
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
+      - run: docker build --target migrator -t rosterly-migrator:${{ github.sha }} .
+      - run: docker build --target runner -t rosterly:${{ github.sha }} .
