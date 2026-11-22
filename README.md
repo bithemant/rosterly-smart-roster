@@ -109,7 +109,7 @@ For a Docker host, `compose.production.yaml` builds the standalone Next.js runti
 docker compose --env-file .env.production -f compose.production.yaml up -d --build
 ```
 
-Keep `.env.production` outside the repository and use the hosting platform’s secret store where available. The production Compose file does not start PostgreSQL; point it at a separately managed PostgreSQL service. It publishes the app on port `3000`, so place it behind the host's HTTPS reverse proxy.
+Keep `.env.production` outside the repository and use the hosting platform’s secret store where available. The production Compose file does not start PostgreSQL; point it at a separately managed PostgreSQL service. It publishes the app on host port `3000` by default; set `APP_PORT` in `.env.production` if that port is already in use. Place the app behind the host's HTTPS reverse proxy.
 
 No deployment host was selected in this repository, so a live production URL and production database are not claimed here. The host-specific domain, TLS, and environment setup remain deployment steps.
 
