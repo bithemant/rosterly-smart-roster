@@ -134,6 +134,17 @@ No deployment host was selected in this repository, so a live production URL and
 - See [APPROACH.md](APPROACH.md) for the assessment answers and trade-offs, and [DEMO_SCRIPT.md](DEMO_SCRIPT.md) for a recording walkthrough.
 - See [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) for the remaining host, data, recording, and profile details before submission.
 
+## How the system works
+
+1. **Data model:** PostgreSQL stores employees, pods, brands, processes, dated employee-to-process eligibility, operating rules, availability, and roster versions separately. This models employees working across multiple processes or brands without hard-coding a brand's staffing pattern.
+2. **Generation and validation:** A deterministic planner fills required process-day slots using calendars, eligibility, availability, mandatory offs, shift overlap, and daily capacity. A separate validator recalculates coverage and conflicts; error-level issues block publication.
+3. **Single-resource and shared brands:** Eligibility rows and each process's minimum staffing determine whether a process has one or several available resources. A brand can mix single-person and shared processes.
+4. **Only resource unavailable:** The planner leaves a visible coverage gap when no eligible backup can work. It identifies the affected process, date, and missing headcount so a manager can add a trained backup or change the requirement.
+5. **Conflicts:** Mandatory constraints are enforced; preferred weekly offs are soft and can be overridden to preserve client coverage, with a warning. Insufficient staffing stays an explicit issue instead of receiving an invalid assignment.
+6. **Automation and control:** Generation, coverage calculation, validation, versioning, and issue summaries are automated. People maintain data, review leave, edit drafts, resolve conflicts, and publish. The optional AI assistant explains issues but cannot change a roster.
+7. **If the team doubled:** The relational model and shared PostgreSQL database can hold more records. I would add pagination and query tuning, move long planning jobs to a worker queue, and evaluate a constraint solver for larger, tightly constrained schedules.
+8. **One more week:** I would benchmark with representative anonymized data, add the team's real skills and shift constraints, compare full-month fairness with a solver, and finish host-specific backup and recovery procedures.
+
 ## Source document
 
 The feature scope follows the supplied AI Internship Assessment PDF. See the assessment document for the exact assignment context.
