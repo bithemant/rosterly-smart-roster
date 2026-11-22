@@ -24,5 +24,6 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
+      - run: docker compose --env-file .env.example -f compose.production.yaml config --quiet
       - run: docker build --target migrator -t rosterly-migrator:${{ github.sha }} .
       - run: docker build --target runner -t rosterly:${{ github.sha }} .

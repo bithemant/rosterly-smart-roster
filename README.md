@@ -103,16 +103,13 @@ Configure `DATABASE_URL`, `SETUP_TOKEN`, `NODE_ENV=production`, and optionally A
 
 Use `/api/health` as the host's readiness check. It returns HTTP 200 only when the app can reach PostgreSQL, and HTTP 503 otherwise. The production Docker image includes a health check against this route.
 
-For a Docker host, the `Dockerfile` builds a small standalone Next.js runtime image and a separate `migrator` target. Build both from the same commit, run the migrator with the production `DATABASE_URL` before rollout, then start the runtime image on port `3000`:
+For a Docker host, `compose.production.yaml` builds the standalone Next.js runtime and a separate migrator. Create an ignored `.env.production` file containing `DATABASE_URL` for your managed PostgreSQL instance and a private `SETUP_TOKEN` with at least 24 characters. Optionally add the `AI_*` variables from `.env.example`. Compose waits for the migration container to finish successfully before starting the app:
 
 ```bash
-docker build --target migrator -t rosterly-migrator .
-docker run --rm --env-file .env.production rosterly-migrator
-docker build --target runner -t rosterly .
-docker run --rm --env-file .env.production -p 3000:3000 rosterly
+docker compose --env-file .env.production -f compose.production.yaml up -d --build
 ```
 
-Keep `.env.production` outside the repository and use the hosting platform’s secret store where available. The app image does not start PostgreSQL; point it at a separately managed PostgreSQL service.
+Keep `.env.production` outside the repository and use the hosting platform’s secret store where available. The production Compose file does not start PostgreSQL; point it at a separately managed PostgreSQL service. It publishes the app on port `3000`, so place it behind the host's HTTPS reverse proxy.
 
 No deployment host was selected in this repository, so a live production URL and production database are not claimed here. The host-specific domain, TLS, and environment setup remain deployment steps.
 
