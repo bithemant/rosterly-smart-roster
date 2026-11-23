@@ -2,6 +2,8 @@
 
 Rosterly is a shared monthly planning workspace for multi-brand operations teams. It keeps workforce records and operating rules in PostgreSQL, produces versioned roster drafts, validates changes, and gives each account access only to its role and scope.
 
+See the [complete project guide](docs/PROJECT_GUIDE.md) for the architecture, full tech stack, database model, API map, role permissions, scheduling rules, detailed Windows run steps, and deployment notes. Local demo credentials are kept separately in the ignored `LOCAL_DEMO_CREDENTIALS.md` file and are not included in this public repository.
+
 The application starts with an empty database and does not auto-seed workforce records. For the assessment walkthrough, an opt-in synthetic workbook uses generated operator IDs and fictional brand names. It is clearly labeled and must not be treated as real operational data. Replace it with your anonymized source data before operational use.
 
 ## Capabilities
