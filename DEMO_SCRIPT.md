@@ -2,6 +2,8 @@
 
 Record this after the workspace has been configured with either your anonymized assessment workbook or the clearly labeled synthetic demo workbook. If using synthetic data, state that clearly. Do not show a real credential or personal record you do not have permission to disclose.
 
+For a local recording, open `/recording-studio.html` in a second browser tab, click **Start capture**, select the Rosterly tab, then follow this script. Stop and download the WebM recording from the recorder tab.
+
 ## 0:00–0:30 — Sign-in and roles
 
 Show the Rosterly login and role badge after signing in. Explain that the workspace has Administrator, Operations Manager, Pod Lead, and Employee roles, and that API routes check both role and pod scope.

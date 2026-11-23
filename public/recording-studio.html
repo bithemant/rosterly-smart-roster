@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#172554">
+  <title>Rosterly Walkthrough Recorder</title>
+  <style>
+    :root { color-scheme: light; --ink: #172554; --muted: #64748b; --line: #dbe3ef; --paper: #fff; --canvas: #f3f6fb; --indigo: #4338ca; --coral: #e97b68; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--canvas); color: var(--ink); font: 16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(880px, calc(100% - 32px)); margin: 44px auto; }
+    header { margin-bottom: 22px; }
+    .eyebrow { color: var(--indigo); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 8px 0; font-size: clamp(28px, 4vw, 40px); letter-spacing: -.04em; }
+    .intro { max-width: 650px; margin: 0; color: var(--muted); }
+    .card { border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 18px 50px #17255412; }
+    .recorder { padding: 24px; }
+    .status-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 7px 11px; background: #eef2ff; color: #3730a3; font-size: 13px; font-weight: 700; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+    .badge.live .dot { background: #dc5548; box-shadow: 0 0 0 4px #dc554822; }
+    #timer { font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 750; letter-spacing: .04em; }
+    .preview { display: block; width: 100%; max-height: 480px; aspect-ratio: 16/9; border: 1px solid var(--line); border-radius: 12px; background: #101827; object-fit: contain; }
+    .placeholder { display: grid; place-items: center; width: 100%; aspect-ratio: 16/9; border: 1px dashed #bac6d8; border-radius: 12px; background: #f8faff; color: #64748b; text-align: center; padding: 24px; }
+    .placeholder strong { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
+    button, .download { appearance: none; border: 1px solid var(--line); border-radius: 10px; padding: 10px 15px; background: white; color: var(--ink); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+    button.primary { border-color: var(--indigo); background: var(--indigo); color: white; }
+    button.stop { border-color: #f1c7bf; background: #fff0ed; color: #a8483d; }
+    button:disabled, .download[aria-disabled="true"] { cursor: not-allowed; opacity: .48; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #818cf8; outline-offset: 2px; }
+    .option { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; color: #475569; font-size: 14px; }
+    input { accent-color: var(--indigo); }
+    #message { min-height: 24px; margin: 14px 0 0; color: var(--muted); font-size: 14px; }
+    #message.error { color: #a8483d; }
+    .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+    .note { padding: 20px; }
+    h2 { margin: 0 0 8px; font-size: 16px; }
+    ol, ul { margin: 0; padding-left: 20px; color: #475569; font-size: 14px; }
+    li + li { margin-top: 5px; }
+    .disclosure { margin: 18px 2px 0; color: var(--muted); font-size: 13px; }
+    @media (max-width: 620px) { main { margin: 24px auto; } .recorder { padding: 16px; } .notes { grid-template-columns: 1fr; } .option { margin-left: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Rosterly · Assessment demo</div>
+      <h1>Walkthrough recorder</h1>
+      <p class="intro">Capture the Rosterly tab and save a WebM recording on this device. The recording is processed in your browser and is never uploaded.</p>
+    </header>
+
+    <section class="card recorder" aria-label="Screen recorder">
+      <div class="status-row">
+        <div id="badge" class="badge"><span class="dot" aria-hidden="true"></span><span id="state">Ready to record</span></div>
+        <div id="timer" aria-label="Recording time">00:00</div>
+      </div>
+      <div id="placeholder" class="placeholder"><div><strong>Your recording preview will appear here</strong>Start capture, then select the browser tab showing Rosterly.</div></div>
+      <video id="preview" class="preview" controls playsinline hidden></video>
+      <div class="controls">
+        <button id="start" class="primary" type="button">Start capture</button>
+        <button id="pause" type="button" disabled>Pause</button>
+        <button id="stop" class="stop" type="button" disabled>Stop recording</button>
+        <a id="download" class="download" aria-disabled="true" tabindex="-1">Download video</a>
+        <label class="option"><input id="microphone" type="checkbox"> Include microphone narration</label>
+      </div>
+      <p id="message" role="status" aria-live="polite">Choose the Rosterly browser tab in the screen-share prompt. If you enable narration, your browser will also ask for microphone access.</p>
+    </section>
+
+    <div class="notes">
+      <section class="card note">
+        <h2>Record the walkthrough</h2>
+        <ol>
+          <li>Open Rosterly in a browser tab and sign in before recording.</li>
+          <li>Return here, click <b>Start capture</b>, and select the Rosterly tab.</li>
+          <li>Follow the 3–5 minute sequence in <code>DEMO_SCRIPT.md</code>.</li>
+          <li>Come back here, click <b>Stop recording</b>, then download the video.</li>
+        </ol>
+      </section>
+      <section class="card note">
+        <h2>Before sharing</h2>
+        <ul>
+          <li>Say clearly that the included assessment workbook is synthetic.</li>
+          <li>Keep passwords and API keys out of the recording.</li>
+          <li>Review the downloaded file before uploading it to your submission.</li>
+        </ul>
+      </section>
+    </div>
+    <p class="disclosure">This page captures only after you click Start and choose a screen or tab. It does not send, store, or upload recordings to Rosterly.</p>
+  </main>
+
+  <script>
+    const startButton = document.querySelector("#start");
+    const pauseButton = document.querySelector("#pause");
+    const stopButton = document.querySelector("#stop");
+    const downloadLink = document.querySelector("#download");
+    const microphone = document.querySelector("#microphone");
+    const badge = document.querySelector("#badge");
+    const stateLabel = document.querySelector("#state");
+    const timer = document.querySelector("#timer");
+    const message = document.querySelector("#message");
+    const preview = document.querySelector("#preview");
+    const placeholder = document.querySelector("#placeholder");
+    let displayStream;
+    let microphoneStream;
+    let recorder;
+    let chunks = [];
+    let recordedUrl;
+    let elapsed = 0;
+    let segmentStarted = 0;
+    let timerHandle;
+
+    function showMessage(text, isError = false) {
+      message.textContent = text;
+      message.classList.toggle("error", isError);
+    }
+
+    function setTimer(milliseconds) {
+      const totalSeconds = Math.floor(milliseconds / 1000);
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      timer.textContent = `${minutes}:${seconds}`;
+    }
+
+    function stopTracks() {
+      for (const stream of [displayStream, microphoneStream]) {
+        stream?.getTracks().forEach((track) => track.stop());
+      }
+    }
+
+    function stopRecording() {
+      if (!recorder || recorder.state === "inactive") return;
+      if (recorder.state === "recording") elapsed += Date.now() - segmentStarted;
+      window.clearInterval(timerHandle);
+      setTimer(elapsed);
+      recorder.stop();
+    }
+
+    function finishRecording() {
+      window.clearInterval(timerHandle);
+      stopTracks();
+      setTimer(elapsed);
+      pauseButton.disabled = true;
+      stopButton.disabled = true;
+      startButton.disabled = false;
+      pauseButton.textContent = "Pause";
+      stateLabel.textContent = "Recording ready";
+      badge.classList.remove("live");
+      if (!chunks.length) {
+        showMessage("No video data was captured. Start a new recording and keep the selected tab open.", true);
+        return;
+      }
+      const mimeType = recorder?.mimeType || "video/webm";
+      const videoBlob = new Blob(chunks, { type: mimeType });
+      if (recordedUrl) URL.revokeObjectURL(recordedUrl);
+      recordedUrl = URL.createObjectURL(videoBlob);
+      preview.src = recordedUrl;
+      preview.hidden = false;
+      placeholder.hidden = true;
+      downloadLink.href = recordedUrl;
+      downloadLink.download = `rosterly-walkthrough-${new Date().toISOString().slice(0, 10)}.webm`;
+      downloadLink.removeAttribute("aria-disabled");
+      downloadLink.removeAttribute("tabindex");
+      showMessage(`Recording ready (${(videoBlob.size / (1024 * 1024)).toFixed(1)} MB). Review it, then download the WebM file.`);
+    }
+
+    startButton.addEventListener("click", async () => {
+      if (!navigator.mediaDevices?.getDisplayMedia || !window.MediaRecorder) {
+        showMessage("Screen recording is unavailable in this browser. Open this page in a current version of Edge or Chrome.", true);
+        return;
+      }
+      startButton.disabled = true;
+      try {
+        displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: { ideal: 30, max: 30 } },
+          audio: false,
+        });
+        if (microphone.checked) microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const tracks = [...displayStream.getVideoTracks(), ...(microphoneStream?.getAudioTracks() ?? [])];
+        const stream = new MediaStream(tracks);
+        const mimeType = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]
+          .find((candidate) => MediaRecorder.isTypeSupported(candidate));
+        recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        chunks = [];
+        elapsed = 0;
+        setTimer(elapsed);
+        recorder.addEventListener("dataavailable", (event) => {
+          if (event.data?.size) chunks.push(event.data);
+        });
+        recorder.addEventListener("stop", finishRecording, { once: true });
+        displayStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+          stopRecording();
+        }, { once: true });
+        recorder.start(1000);
+        segmentStarted = Date.now();
+        timerHandle = window.setInterval(() => setTimer(elapsed + Date.now() - segmentStarted), 250);
+        pauseButton.disabled = false;
+        stopButton.disabled = false;
+        stateLabel.textContent = "Recording";
+        badge.classList.add("live");
+        showMessage("Recording locally. Switch to the Rosterly tab and begin the walkthrough.");
+      } catch (error) {
+        stopTracks();
+        startButton.disabled = false;
+        const cancelled = error?.name === "NotAllowedError";
+        showMessage(cancelled ? "Screen sharing was cancelled. Click Start and choose the Rosterly tab to try again." : "Could not start capture. Check browser screen and microphone permissions, then try again.", true);
+      }
+    });
+
+    pauseButton.addEventListener("click", () => {
+      if (recorder?.state === "recording") {
+        recorder.pause();
+        elapsed += Date.now() - segmentStarted;
+        window.clearInterval(timerHandle);
+        setTimer(elapsed);
+        pauseButton.textContent = "Resume";
+        stateLabel.textContent = "Paused";
+        badge.classList.remove("live");
+        showMessage("Recording paused. Resume before continuing the walkthrough.");
+      } else if (recorder?.state === "paused") {
+        recorder.resume();
+        segmentStarted = Date.now();
+        timerHandle = window.setInterval(() => setTimer(elapsed + Date.now() - segmentStarted), 250);
+        pauseButton.textContent = "Pause";
+        stateLabel.textContent = "Recording";
+        badge.classList.add("live");
+        showMessage("Recording locally. Continue the walkthrough.");
+      }
+    });
+
+    stopButton.addEventListener("click", () => {
+      stopRecording();
+    });
+  </script>
+</body>
+</html>

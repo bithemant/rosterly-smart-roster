@@ -20,7 +20,7 @@ Update this checklist as the assessment is prepared for submission. The included
 
 - **Application:** Local demo at `http://localhost:3002`; public URL pending deployment
 - **Repository:** https://github.com/bithemant/rosterly-smart-roster
-- **Demo video:** Pending screen recording of the deployed app; disclose synthetic records if used
+- **Demo video:** Pending screen recording of the deployed app; use `/recording-studio.html` and disclose synthetic records if used
 - **LinkedIn:** Add your profile URL
 - **Approach note:** `APPROACH.md`
 - **Subject:** `Smart Roster Management System Assignment - [Your Full Name]`

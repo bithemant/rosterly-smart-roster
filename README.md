@@ -135,6 +135,7 @@ No deployment host was selected in this repository, so a live production URL and
 - Generation can leave open slots when the eligible workforce is insufficient. Managers see those gaps and must resolve them before publication.
 - AI suggestions never modify assignments, approve leave, or publish a roster.
 - See [APPROACH.md](APPROACH.md) for the assessment answers and trade-offs, and [DEMO_SCRIPT.md](DEMO_SCRIPT.md) for a recording walkthrough.
+- Open `/recording-studio.html` while the app is running to capture the selected browser tab locally and download a WebM recording.
 - See [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) for the remaining host, data, recording, and profile details before submission.
 
 ## How the system works
