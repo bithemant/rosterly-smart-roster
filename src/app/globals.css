@@ -278,6 +278,51 @@ a { color: inherit; text-decoration: none; }
 .ai-summary-card .button { min-height: 32px; }
 .roster-panel { overflow: hidden; }
 .toolbar-spacer { flex: 1; }
+
+/* Distinct operations cockpit treatment: editorial hero, warm accents, and clearer metrics. */
+.sidebar { background: linear-gradient(180deg, #242238 0%, #171726 100%); border-right: 1px solid rgba(255,255,255,.06); }
+.nav-item.active { background: linear-gradient(90deg, rgba(233,123,104,.19), rgba(102,87,223,.16)); box-shadow: inset 3px 0 var(--coral); }
+.topbar { position: sticky; top: 0; z-index: 8; background: rgba(247,247,251,.91); backdrop-filter: blur(14px); }
+.role-pill { color: #9d584c; border-color: #f0d2cb; background: #fff3f0; }
+.page-heading { position: relative; isolation: isolate; overflow: hidden; min-height: 148px; align-items: center; margin: 23px 0 19px; padding: 23px 26px; border: 1px solid rgba(255,255,255,.08); border-radius: 19px; color: #fff; background: linear-gradient(112deg, #242338 0%, #373355 64%, #51477c 100%); box-shadow: 0 16px 34px rgba(37,35,66,.13); }
+.page-heading::before { content: ""; position: absolute; z-index: -1; right: 15%; top: -110px; width: 245px; height: 245px; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; box-shadow: 0 0 0 24px rgba(255,255,255,.025), 0 0 0 52px rgba(255,255,255,.025); }
+.page-heading::after { content: ""; position: absolute; z-index: -1; right: 8%; bottom: -72px; width: 145px; height: 145px; border-radius: 50%; background: radial-gradient(circle, rgba(233,123,104,.28), rgba(233,123,104,0) 68%); }
+.page-heading > div:first-child, .heading-actions { position: relative; z-index: 1; }
+.page-eyebrow { display: block; margin-bottom: 9px; color: #f2a89b; font-size: 10px; font-weight: 760; letter-spacing: 1.45px; }
+.page-heading h1 { color: #fff; font-size: 28px; letter-spacing: -1px; }
+.page-heading p { color: #cbc8dc; }
+.page-heading .button:not(.button-primary):not(.button-coral) { color: #f4f2fb; border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.08); }
+.page-heading .button:not(.button-primary):not(.button-coral):hover { border-color: rgba(255,255,255,.42); background: rgba(255,255,255,.14); }
+.page-heading .button-coral { color: #ffd8d1; border-color: rgba(255,194,182,.36); background: rgba(233,123,104,.13); }
+.metric-card { position: relative; overflow: hidden; min-height: 132px; border-radius: 15px; box-shadow: 0 9px 24px rgba(35,34,69,.045); }
+.metric-card::after { content: ""; position: absolute; top: -32px; right: -30px; width: 92px; height: 92px; border-radius: 50%; background: var(--accent-soft); opacity: .72; }
+.metric-card:nth-child(2)::after { background: var(--coral-soft); }
+.metric-card:nth-child(3)::after { background: var(--blue-soft); }
+.metric-card:nth-child(4)::after { background: var(--amber-soft); }
+.metric-top, .metric-value, .metric-foot { position: relative; z-index: 1; }
+.metric-icon { width: 34px; height: 34px; border-radius: 11px; }
+.metric-value { font-size: 28px; }
+.dashboard-grid { gap: 16px; margin-top: 17px; }
+.dashboard-grid > .panel, .dashboard-grid > div > .panel, .issues-panel, .onboarding-panel { border-radius: 16px; box-shadow: 0 8px 24px rgba(35,34,69,.04); }
+.coverage-summary { padding-top: 19px; padding-bottom: 21px; }
+.coverage-meter { height: 10px; background: #eeedf5; }
+.coverage-meter > i { background: linear-gradient(90deg, #6758dc 0%, #8978dc 54%, #e78670 100%); }
+.panel-header { padding-top: 17px; padding-bottom: 14px; }
+.subtle-header { background: linear-gradient(90deg, #fbfaff, #fff8f6); }
+
+@media (max-width: 760px) {
+  .topbar { position: relative; top: auto; }
+  .page-heading { min-height: 0; align-items: flex-start; gap: 17px; margin: 17px 0 15px; padding: 20px; border-radius: 16px; }
+  .page-heading h1 { font-size: 23px; }
+  .heading-actions { width: 100%; flex-wrap: wrap; }
+  .page-heading::before { right: -80px; top: -125px; }
+}
+
+@media (max-width: 420px) {
+  .page-heading { padding: 17px; }
+  .page-heading h1 { font-size: 21px; }
+  .page-heading .button { min-height: 34px; padding: 0 9px; }
+}
 .roster-table .day-cell { position: relative; }
 .day-chip.assigned { color: #6153bd; background: #eeecff; }
 .cell-tooltip { display: none; position: absolute; z-index: 3; top: 90%; left: 50%; transform: translateX(-50%); max-width: 200px; padding: 7px 9px; border-radius: 7px; color: white; background: #292a43; white-space: normal; font-size: 10px; box-shadow: var(--shadow); }

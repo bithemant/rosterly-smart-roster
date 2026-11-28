@@ -189,7 +189,7 @@ export default function Workspace({ user, aiReady, onSignOut }: { user: User; ai
 
       <main className="main-area">
         <header className="topbar"><div className="breadcrumbs"><span>Rosterly</span><ChevronRight size={12} /><strong>{sectionNames[section]}</strong></div><div className="topbar-actions"><span className="role-pill">{roleNames[user.role]}</span><label className="sr-only" htmlFor="workspace-month">Selected month</label><input id="workspace-month" className="month-select" type="month" value={month} onChange={(event) => { const nextMonth = event.target.value; setMonth(nextMonth); setEditForm((current) => ({ ...current, date: `${nextMonth}-01` })); }} /></div></header>
-        <div className="page-heading"><div><h1>{section === "overview" ? `Good ${timeGreeting()}, ${user.displayName.split(" ")[0]}.` : sectionNames[section]}</h1><p>{section === "overview" ? `Here’s the operating picture for ${displayMonth}.` : sectionSubtitle(section)}</p></div><div className="heading-actions">
+        <div className="page-heading"><div><span className="page-eyebrow">{section === "overview" ? "WORKFORCE OPERATIONS" : `ROSTERLY / ${sectionNames[section].toUpperCase()}`}</span><h1>{section === "overview" ? `Good ${timeGreeting()}, ${user.displayName.split(" ")[0]}.` : sectionNames[section]}</h1><p>{section === "overview" ? `Here’s the operating picture for ${displayMonth}.` : sectionSubtitle(section)}</p></div><div className="heading-actions">
           {section === "overview" && isManager && <button className="button button-primary" type="button" disabled={busy || !overview?.counts.employees || !overview?.counts.processes} onClick={() => void generateRoster()}>{busy ? <LoaderCircle className="spin" /> : <WandSparkles />} Generate roster</button>}
           {section === "roster" && <><button className="button" type="button" disabled={!overview?.assignments.length} onClick={exportRoster}><ArrowDownToLine /> Export CSV</button>{isManager && overview?.version?.status === "DRAFT" && <button className="button button-primary" type="button" disabled={busy} onClick={() => void publishRoster()}><CheckCircle2 /> Publish roster</button>}</>}
           {section === "roster" && canEditDraft && overview?.version?.status === "DRAFT" && <button className="button button-coral" type="button" onClick={() => setEditOpen(true)}><Settings2 /> Adjust assignment</button>}
@@ -227,8 +227,8 @@ function sectionSubtitle(section: Section) {
   return map[section];
 }
 
-function Metric({ label, value, foot, tone = "" }: { label: string; value: string | number; foot: string; tone?: string }) {
-  return <article className="metric-card"><div className="metric-top"><span className="metric-label">{label}</span><span className={`metric-icon ${tone}`}><Users /></span></div><div className="metric-value">{value}</div><div className="metric-foot">{foot}</div></article>;
+function Metric({ label, value, foot, icon, tone = "" }: { label: string; value: string | number; foot: string; icon: React.ReactNode; tone?: string }) {
+  return <article className="metric-card"><div className="metric-top"><span className="metric-label">{label}</span><span className={`metric-icon ${tone}`}>{icon}</span></div><div className="metric-value">{value}</div><div className="metric-foot">{foot}</div></article>;
 }
 
 function OverviewPage({ data, availability, isManager, onNavigate, onGenerate, busy }: { data: Overview; availability: AvailabilityItem[]; isManager: boolean; onNavigate: (section: Section) => void; onGenerate: () => void; busy: boolean }) {
@@ -236,10 +236,10 @@ function OverviewPage({ data, availability, isManager, onNavigate, onGenerate, b
   const openIssues = data.issues.filter((item) => item.severity === "ERROR").length;
   return <>
     <section className="metric-grid">
-      <Metric label="Active employees in scope" value={data.counts.employees} foot="From your current roster data" />
-      <Metric label="Brands and processes" value={`${data.counts.brands} / ${data.counts.processes}`} foot="Operating resources loaded" tone="coral" />
-      <Metric label="Roster coverage" value={data.coverage ? `${data.coverage.coveragePercent}%` : "—"} foot={data.coverage ? `${data.coverage.gapSlots} uncovered required slots` : "Generate a draft to calculate coverage"} tone="blue" />
-      <Metric label="Requests awaiting review" value={pending} foot={data.issues.length ? `${openIssues} blocking roster issues` : "Availability requests in this month"} tone="amber" />
+      <Metric label="Active employees in scope" value={data.counts.employees} foot="From your current roster data" icon={<Users />} />
+      <Metric label="Brands and processes" value={`${data.counts.brands} / ${data.counts.processes}`} foot="Operating resources loaded" icon={<Database />} tone="coral" />
+      <Metric label="Roster coverage" value={data.coverage ? `${data.coverage.coveragePercent}%` : "—"} foot={data.coverage ? `${data.coverage.gapSlots} uncovered required slots` : "Generate a draft to calculate coverage"} icon={<CheckCircle2 />} tone="blue" />
+      <Metric label="Requests awaiting review" value={pending} foot={data.issues.length ? `${openIssues} blocking roster issues` : "Availability requests in this month"} icon={<Clock3 />} tone="amber" />
     </section>
     {!data.counts.employees || !data.counts.processes ? <section className="panel onboarding-panel"><div className="onboarding-mark"><Database /></div><div><span className="eyebrow">WORKSPACE SETUP</span><h2>Add your real operating data</h2><p>Rosterly is connected to its database and ready for your anonymized workbook. Upload the employee, pod, brand, process, eligibility, leave, and holiday sheets to see a real coverage plan here.</p><div className="onboarding-points"><span><Check size={14} /> No sample people or roster data</span><span><Check size={14} /> Validate before committing</span><span><Check size={14} /> Private database import history</span></div></div>{isManager && <button className="button button-primary" onClick={() => onNavigate("import")}><Upload /> Go to data import <ArrowRight /></button>}</section> : null}
     <div className="dashboard-grid">
